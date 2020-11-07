@@ -14,5 +14,7 @@ public class App
     {
         System.out.println( "Hello World!" );
         System.out.println(DigestUtils.sha256("helloworld"));
+
+        JdbcMsSql.getDbConnection();
     }
 }
