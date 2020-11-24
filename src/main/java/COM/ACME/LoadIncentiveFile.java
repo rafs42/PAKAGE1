@@ -26,7 +26,7 @@ import java.util.Arrays;
 
 
 public class LoadIncentiveFile {
-    static String myVersion = "SwiftUnixNormaliserV3  version :  15AUG2018";
+    static String myVersion = "LoadIncentiveFileV1  version : 24NOV2020";
     static String SOURCEPATH ="E:\\Temp\\ILA_Services\\INCENTIVE\\UNPROCESSED\\";
     static String DESTPATH = "E:\\Temp\\ILA_Services\\INCENTIVE\\PROCESSED\\";
     static String LOGFILELOCATION = "E:\\Temp\\ILA_Services\\INCENTIVE\\LOG\\";
@@ -63,8 +63,8 @@ public class LoadIncentiveFile {
     public static String JDBC_URL = "jdbc:sqlserver://10.23.1.44:64451;databaseName=URBILATD1;";
     static String sql_hdr_insert = "INSERT INTO [URBIS].[ABC_INCENTIVE_HDR]   ([FILE_SEQNO],[FILE_NAME] ,[FILE_TYPE] , [STATUS1]) VALUES  (?,?,'INCENTIVE', 'L')";
     static String sql_get_FILE_SEQNO= "SELECT MAX(FILE_SEQNO)+1 AS SEQNO FROM [URBIS].[ABC_INCENTIVE_HDR]";
-    static String sql_get_hdr_row_count= "SELECT COUNT(*) AS ROWCOUNT FROM [URBIS].[ABC_INCENTIVE_HDR]";
-    static String sql_dtl_insert = "INSERT INTO [URBIS].[ABC_INCENTIVE_DTL] ([FILE_SEQNO] ,[FILE_NAME] ,[LINE_NO] ,[LINE_TXT] ,[STATUS1]) VALUES (?, ?, ?, ?, 'L')";
+    static String sql_get_hdr_row_count= "SELECT COUNT(*) AS RCOUNT FROM [URBIS].[ABC_INCENTIVE_HDR]";
+    static String sql_dtl_insert = "INSERT INTO [URBIS].[ABC_INCENTIVE_DTL] ([FILE_SEQNO] ,[FILE_NAME] ,[LINE_NO] ,[LINE_TXT] ,[STATUS1], [RECTYPE]) VALUES (?, ?, ?, ?, 'L',?)";
 
     public static boolean getDbConnection() {
 
@@ -152,6 +152,13 @@ public class LoadIncentiveFile {
         ResultSet rs;
         Statement sta;
 
+        String vHTYPE ;
+        String vHUNIT ;
+        String vHDATE ;
+        int vHREC_COUNT ;
+        String vEVENT ;
+        String vCIF ;
+
         Update_Log(LOGFILELOCATION, "In Process   fName=" +  fName + "     nName=" + nName + "    rName=" + rName);
         System.out.println("In Process   fName=" +  fName + "     nName=" + nName + "    rName=" + rName);
 
@@ -170,12 +177,13 @@ public class LoadIncentiveFile {
            rs = sta.executeQuery(sql_get_hdr_row_count);
 
             while (rs.next()) {
-                nFileSeqno=rs.getInt("ROWCOUNT");
-                System.out.println("ROWCOUNT " + vRowCount );
+                System.out.println(rs.toString() );
+                vRowCount=rs.getInt("RCOUNT");
+                System.out.println("RCOUNT " + vRowCount );
             }
 
-            if (vRowCount=0) {
-                nFileSeqno = 0;
+            if (vRowCount==0) {
+                nFileSeqno = 1;
             } else {
                 rs = sta.executeQuery(sql_get_FILE_SEQNO);
                 while (rs.next()) {
@@ -200,6 +208,31 @@ public class LoadIncentiveFile {
                 pstmt.setString(2, fName);
                 pstmt.setInt(3, vlineno);
                 pstmt.setString(4, aReq);
+
+                if (vlineno == 1) {
+                    pstmt.setString(5, "HDR");
+                    String[] sHDR = aReq.split("|");
+                    int hcount = 0;
+                    for (String hField : sHDR) {
+                        switch (hcount)
+                        {
+                            case 0:
+                                vHTYPE = hField;
+                                break;
+                            case 1:
+                                vHUNIT = hField;
+                                break;
+                            case 2:
+                                vHDATE = hField;
+                                break;
+                            case 3:
+                                vHREC_COUNT = Integer.parseInt(hField);
+                                break;
+                        }
+                        hcount++;
+                    }
+
+                } else { pstmt.setString(5, "DTL"); };
                 pstmt.addBatch();
                 vlineno++;
             }
