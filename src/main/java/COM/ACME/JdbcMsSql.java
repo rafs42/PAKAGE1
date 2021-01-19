@@ -20,8 +20,8 @@ public class JdbcMsSql {
 
 //            String dbURL = "jdbc:sqlserver://localhost\\sqlexpress;integratedSecurity=true";
             String dbURL = JDBC_URL;
-            String user = "urbistad";
-            String pass = "manager";
+            String user = "URBISTAD";
+            String pass = "urbistad";
             conn = DriverManager.getConnection(dbURL, user, pass);
             if (conn != null) {
                 DatabaseMetaData dm = (DatabaseMetaData) conn.getMetaData();

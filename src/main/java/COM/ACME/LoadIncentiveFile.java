@@ -1,6 +1,6 @@
 package COM.ACME;
 
-import org.apache.commons.lang.ObjectUtils;
+//import org.apache.commons.lang.ObjectUtils;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -65,6 +65,7 @@ public class LoadIncentiveFile {
     static String sql_get_FILE_SEQNO= "SELECT MAX(FILE_SEQNO)+1 AS SEQNO FROM [URBIS].[ABC_INCENTIVE_HDR]";
     static String sql_get_hdr_row_count= "SELECT COUNT(*) AS RCOUNT FROM [URBIS].[ABC_INCENTIVE_HDR]";
     static String sql_dtl_insert = "INSERT INTO [URBIS].[ABC_INCENTIVE_DTL] ([FILE_SEQNO] ,[FILE_NAME] ,[LINE_NO] ,[LINE_TXT] ,[STATUS1], [RECTYPE]) VALUES (?, ?, ?, ?, 'L',?)";
+    static String sql_Hdtl_insert = "INSERT INTO [URBIS].[ABC_INCENTIVE_DTL] ([FILE_SEQNO] ,[FILE_NAME] ,[LINE_NO] ,[LINE_TXT] ,[STATUS1], [RECTYPE], [HTYPE],[HUNIT],[HDATE],[HREC_COUNT],[EVENT],[CIF]) VALUES (?, ?, ?, ?, 'L',?,?,?,?,?, ?,?)";
 
     public static boolean getDbConnection() {
 
@@ -78,7 +79,7 @@ public class LoadIncentiveFile {
             String JDBC_URL = "jdbc:sqlserver://localhost:1433;databaseName=URBISBH;";
             String dbURL = JDBC_URL;
             String user = "urbistad";
-            String pass = "manager";
+            String pass = "urbistad";
             conn = DriverManager.getConnection(dbURL, user, pass);
             if (conn != null) {
                 DatabaseMetaData dm = (DatabaseMetaData) conn.getMetaData();
@@ -201,17 +202,23 @@ public class LoadIncentiveFile {
             System.out.println("Header Rows Inserted=" + row);
 
             //insert into details
-            pstmt = conn.prepareStatement(sql_dtl_insert) ;
+            pstmt = conn.prepareStatement(sql_Hdtl_insert) ;
             for (String aReq : AllLines) {
                 System.out.println(aReq);
                 pstmt.setInt(1, nFileSeqno);
                 pstmt.setString(2, fName);
                 pstmt.setInt(3, vlineno);
                 pstmt.setString(4, aReq);
+                vHTYPE       = "";
+                vHUNIT       = "";
+                vHDATE       = "";
+                vHREC_COUNT  = 0;
+                vEVENT 	  = "";
+                vCIF  		  = "";
 
                 if (vlineno == 1) {
                     pstmt.setString(5, "HDR");
-                    String[] sHDR = aReq.split("|");
+                    String[] sHDR = aReq.split("\\|");
                     int hcount = 0;
                     for (String hField : sHDR) {
                         switch (hcount)
@@ -231,8 +238,30 @@ public class LoadIncentiveFile {
                         }
                         hcount++;
                     }
+                } else {
+                    pstmt.setString(5, "DTL");
+                    String[] sHDR = aReq.split("\\|");
+                    int hcount = 0;
+                    for (String hField : sHDR) {
+                        switch (hcount)
+                        {
+                            case 0:
+                                vEVENT = hField;
+                                break;
+                            case 1:
+                                vCIF = hField;
+                                break;
+                        }
+                        hcount++;
+                    }
+                };
 
-                } else { pstmt.setString(5, "DTL"); };
+                pstmt.setString(6, vHTYPE);
+                pstmt.setString(7, vHUNIT);
+                pstmt.setString(8, vHDATE);
+                pstmt.setInt(9, vHREC_COUNT);
+                pstmt.setString(10, vEVENT);
+                pstmt.setString(11, vCIF);
                 pstmt.addBatch();
                 vlineno++;
             }
@@ -275,7 +304,7 @@ public class LoadIncentiveFile {
             System.out.println("In Processdir SOURCEPATH=  " + SOURCEPATH  + " list count=" + dirlist.length);
 
             for (int i = 0; i < dirlist.length; i++) {
-                System.out.println("In Processdir proceessing:" + dirlist[i]);
+                System.out.println("In Processdir processing:" + dirlist[i]);
                 Process(aDir +  dirlist[i], "", DESTPATH   + "BAK_" + dirlist[i]);
             }
         }
